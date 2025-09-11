@@ -4,25 +4,31 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-# Load trained model
-model = tf.keras.models.load_model("waste_classifier.h5")
+# Streamlit page configuration
+st.set_page_config(page_title="♻️ RecycleVision", layout="wide")
+st.title("♻️ RecycleVision - Garbage Classification App")
+st.write("Upload a garbage image and choose a model to classify it. View prediction probabilities as a bar chart.")
 
-# Class names (must match training order)
-class_names = ["cardboard", "glass", "metal", "paper", "plastic", "trash"]
-
-# Sidebar
-st.sidebar.title("♻️ RecycleVision")
-st.sidebar.info(
-    """
-    📌 Upload a garbage image  
-    📌 Our AI model will classify it  
-    📌 Categories: Cardboard, Glass, Metal, Paper, Plastic, Trash
-    """
+# 🔽 Model selector
+model_choice = st.selectbox(
+    "Select Model",
+    [
+        "mobilenetv2_waste_classifier.h5",
+        "vgg16_waste_classifier.h5",
+        "resnet50_waste_classifier.h5"
+    ]
 )
 
-# Main title
-st.title("♻️ RecycleVision - Garbage Classification App")
-st.markdown("### Upload an image and let AI predict the type of waste 🗑️")
+# 📥 Load chosen model
+@st.cache_resource
+def load_model(path):
+    return tf.keras.models.load_model(path)
+
+model = load_model(model_choice)
+
+
+# Class labels
+class_names = ['cardboard', 'glass', 'metal', 'paper', 'plastic', 'trash']
 
 # File uploader
 uploaded_file = st.file_uploader("📤 Choose an image...", type=["jpg", "jpeg", "png"])
@@ -39,12 +45,13 @@ if uploaded_file is not None:
 
     # Prediction
     predictions = model.predict(img_array)
-    predicted_class = class_names[np.argmax(predictions)]
-    confidence = np.max(predictions) * 100
+    result_idx = np.argmax(predictions)
+    result = class_names[result_idx]
+    confidence = predictions[0][result_idx] * 100
 
-    # Show result
-    st.success(f"✅ Prediction: **{predicted_class}**")
-    st.info(f"📊 Confidence: **{confidence:.2f}%**")
+    # Show prediction
+    st.success(f"🗑 **Predicted Category:** {result.capitalize()} ({confidence:.2f}% confidence)")
+    
 
     # Bar chart of probabilities
     fig, ax = plt.subplots()
@@ -59,4 +66,5 @@ if uploaded_file is not None:
 # Footer
 st.markdown("---")
 st.markdown("🚀 Built with ❤️ using **Streamlit + TensorFlow**")
+
 
